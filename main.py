@@ -6,6 +6,7 @@ def Sombrero( str ):
 
     ops = "+."
 
+    #Preprocess to add concatenators between consecutive letters
     pre = []
     lastWasChar = False
     for c in str:
@@ -13,13 +14,13 @@ def Sombrero( str ):
             if lastWasChar:
                 pre.append( '.' )
             lastWasChar = True
-            pre.append( c )
         else:
             lastWasChar = False
-            pre.append( c )
+        pre.append( c )
 
     str = "".join( pre )
 
+    #Transform the infix regex into a postfix regex
     for c in str:
         if c in ops:
             while len(stack) > 0 and ops.find( stack[-1] ) > ops.find( c ):
@@ -41,6 +42,7 @@ def Sombrero( str ):
     while len( stack ) > 0:
         items.append( stack.pop() )
 
+    #Use the standard constructions to build an NFA from the postfix regex
     stack = []
     for x in items:
         if x == '*':
@@ -60,8 +62,12 @@ def Sombrero( str ):
 
     return stack[0]
 
+print "(a+b)*abb"
+print
+
 N = Sombrero( "(a+b)*abb" )
 
 N.condense()
 print N
+print
 N.drawing()
