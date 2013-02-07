@@ -55,19 +55,28 @@ def Sombrero( str ):
             stack.append( stack.pop().union( N ) )
         else:
             stack.append( GNFA( 2, [{x:{1}},{}], 0, 1 ) )
-
+    #Problem: At this point we have a stack of disjoint NFAs. 
+    #Solution: cat ALL the NFAs
     while len( stack ) > 1:
         N = stack.pop()
         stack.append( stack.pop().cat( N ) )
 
     return stack[0]
 
-print "(a+b)*abb"
-print
+#print "(a+b)*abb"
+#print
 
-N = Sombrero( "(a+b)*abb" )
+#Make an NFA
+N = Sombrero( "Gall(agh+i)er" )
 
+#Make a less shitty NFA
 N.condense()
-print N
-print
-N.drawing()
+#print N
+#print
+
+#TODO: Make it a minimal DFA!
+D = N.Subset("abcdefghijklmnopqrstuvwxyzQWERTYUIOPASDFGHJKLZXCVBNM").Minimize()
+#print D
+#print 
+
+D.drawing()

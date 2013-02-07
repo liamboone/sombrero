@@ -134,6 +134,35 @@ class GNFA:
         self.F = { mapper[x] for x in self.F if x in Q }
         self.Q = len( Q )
 
+    def Subset(self, Sigma):
+        K = [{self.s}]
+        total = 0
+        marked = -1
+        Delta = []
+        while marked < total:
+            marked += 1
+            S = K[marked]
+            Del = {}
+            for a in Sigma:
+                U = set()
+                for x in S:
+                    if a in self.delta[x].keys():
+                        U |= self.delta[x][a]
+                if U not in K:
+                    total += 1
+                    K.append( U )
+                Del[a] = {K.index(U)}
+            Delta.append( Del )
+        F = { K.index(S) for S in K if len( S.intersection( self.F ) ) > 0 }
+        self.Q = total + 1
+        self.s = 0
+        self.delta = Delta
+        self.F = F
+        return self
+            
+    def Minimize(self):
+        return self
+
     def drawing(self):
         """
         Write a Dot representation of this DFA to stdout.
