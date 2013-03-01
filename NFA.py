@@ -24,7 +24,6 @@ class GNFA:
             rep.append( " ".join( item ) )
         return "\n".join(rep)
 
-
     def cat(self, nfa):
         """
         "'WRREEEEARH!' ... That was the cat." - Jean Gallier
@@ -75,7 +74,7 @@ class GNFA:
         self.F = {self.t}
         return self
 
-    def eClosure(self, state, ignore=set() ):
+    def eClosure(self, state, ignore):
         if state >= self.Q:
             return None
         eStates = { state }
@@ -88,8 +87,8 @@ class GNFA:
     def epsilonlessify(self):
         #get rid of epsilon transitions
         for state in range( self.Q ):
-            eps = self.eClosure(state)
-            if len( self.F.intersection( eps ) ):
+            eps = self.eClosure(state, set())
+            if len( self.F.intersection( eps ) ) > 0:
                 self.F.add( state )
             delta = {}
             for es in eps:
@@ -102,7 +101,7 @@ class GNFA:
                         delta[k] = self.delta[es][k]
             self.delta[state] = delta
 
-    def trim(self, state, ignore=set()):
+    def trim(self, state, ignore):
         if state in ignore:
             return set()
         Q = {state}
@@ -114,7 +113,7 @@ class GNFA:
 
     def condense(self):
         self.epsilonlessify()
-        Q = self.trim(self.s)
+        Q = self.trim(self.s,set())
         mapper = {self.s:0}
         idx = 1
         fromStates = [self.s]
@@ -162,6 +161,14 @@ class GNFA:
             
     def Minimize(self):
         return self
+
+    def Accepts(self, w):
+        Q = {self.s}
+        for a in w:
+            Q = set.union( * [ self.delta[p][a] if a in self.delta[p] else set() for p in Q ] )
+            if len( Q ) == 0:
+                return False
+        return len( Q & self.F ) > 0
 
     def drawing(self):
         """
