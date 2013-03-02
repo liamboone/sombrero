@@ -11,13 +11,12 @@ def Sombrero( str ):
 
     ops = "+."
 
-    #Preprocess to add concatenators between consecutive letters
+    #Preprocess to add implied concatenators
     nodot = re.compile( r"([^(.+])([^).*+])" )
     pre = ""
     while pre != str:
         pre = str
         str = re.sub( nodot, r"\1.\2", str )
-        print pre,str
 
     #Transform the infix regex into a postfix regex
     for c in str:
@@ -40,7 +39,7 @@ def Sombrero( str ):
 
     while len( stack ) > 0:
         items.append( stack.pop() )
-    
+
     verbose = "".join(items)
     #Use the standard constructions to build an NFA from the postfix regex
     stack = []
@@ -55,7 +54,7 @@ def Sombrero( str ):
             stack.append( stack.pop().union( N ) )
         else:
             stack.append( GNFA( 2, [{x:{1}},{}], 0, 1 ) )
-    #Problem: At this point we have a stack of disjoint NFAs. 
+    #Problem: At this point we might have a stack of disjoint NFAs.
     #Solution: cat ALL the NFAs
     while len( stack ) > 1:
         N = stack.pop()
@@ -65,10 +64,12 @@ def Sombrero( str ):
 
 class Shombrero(cmd.Cmd):
     def __init__(self):
-        self.var = re.compile("$(_*[A-Za-z][A-Za-z0-9_]*)")
+        self.var = re.compile("\$(_*[A-Za-z][A-Za-z0-9_]*)")
+        self.regexs = {}
+        self.varExpand = lambda m: '(' + self.regexs[m.group(1)][0] + ')'
         cmd.Cmd.__init__(self)
         self.prompt = "~^~ "
-        
+
     def do_hist(self, args):
         print self._hist
 
@@ -84,9 +85,16 @@ class Shombrero(cmd.Cmd):
     def do_let(self, args):
         tokens = args.strip().split()
         regex = " ".join( tokens[1:] )
-        #match for variables
+        variables = re.findall( self.var, regex )
+        errors = False
+        for x in variables:
+            if x not in self.regexs:
+                print "*** Undefined variable: ", x
+                errors = True
+        if errors:
+            return
+        regex = re.sub( self.var, self.varExpand, regex )
         verbose, N = Sombrero( regex )
-        print verbose
         N.condense()
         self.regexs[ tokens[0] ] = ( regex, N )
 
@@ -122,22 +130,3 @@ class Shombrero(cmd.Cmd):
 if __name__ == '__main__':
     sh = Shombrero()
     sh.cmdloop()
-
-
-#print "(a+b)*abb"
-#print
-
-#Make an NFA
-#N = Sombrero( "J(oh+ea)n Gall(i+agh)er" )
-
-#Make a less shitty NFA
-#N.condense()
-#print N
-#print
-
-#TODO: Make it a minimal DFA!
-#D = N.Subset("QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm ").Minimize()
-#print D
-#print 
-
-#D.drawing()
