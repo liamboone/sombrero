@@ -65,6 +65,7 @@ def Sombrero( str ):
 
 class Shombrero(cmd.Cmd):
     def __init__(self):
+        self.var = re.compile("$(_*[A-Za-z][A-Za-z0-9_]*)")
         cmd.Cmd.__init__(self)
         self.prompt = "~^~ "
         
@@ -83,6 +84,7 @@ class Shombrero(cmd.Cmd):
     def do_let(self, args):
         tokens = args.strip().split()
         regex = " ".join( tokens[1:] )
+        #match for variables
         verbose, N = Sombrero( regex )
         print verbose
         N.condense()
