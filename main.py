@@ -12,7 +12,7 @@ def Sombrero( str ):
     ops = "+."
 
     #Preprocess to add implied concatenators
-    nodot = re.compile( r"([^(.+])([^).*+])" )
+    nodot = re.compile( "([^(.+])([^).*+])" )
     pre = ""
     while pre != str:
         pre = str
@@ -69,6 +69,10 @@ class Shombrero(cmd.Cmd):
         self.varExpand = lambda m: '(' + self.regexs[m.group(1)][0] + ')'
         cmd.Cmd.__init__(self)
         self.prompt = "~^~ "
+        self.singing = False
+
+    def do_sing(self,args):
+        self.singing = True
 
     def do_hist(self, args):
         print self._hist
@@ -95,14 +99,28 @@ class Shombrero(cmd.Cmd):
             return
         regex = re.sub( self.var, self.varExpand, regex )
         verbose, N = Sombrero( regex )
-        N.condense()
+        #N.condense()
         self.regexs[ tokens[0] ] = ( regex, N )
 
     def do_eval(self, args):
         tokens = args.strip().split()
-        ans = [ self.regexs[ tokens[0] ][1].Accepts( w )\
-                for w in tokens[1:] if tokens[0] in self.regexs ]
-        print " ".join( [str(a) for a in ans] )
+        for w in tokens[1:]:
+            if tokens[0] in self.regexs:
+                print self.regexs[tokens[0]][1].Accepts( w, self.singing ),
+        print
+
+    def do_subset(self, args):
+        tokens = args.strip().split()
+        sigma = " ".join( tokens[1:] )
+        for arg in tokens:
+            if arg in self.regexs:
+                self.regexs[ arg ][1].Subset( self.regexs[ arg ][1].Alphabet() )
+
+    def do_terse(self, args):
+        tokens = args.strip().split()
+        for arg in tokens:
+            if arg in self.regexs:
+                self.regexs[ arg ][1].Condense()
 
     def do_print(self, args):
         tokens = args.strip().split()

@@ -1,6 +1,7 @@
 __author__ = 'liam'
 
 import copy
+import random
 
 class GNFA:
     def __init__(self, Q, delta, s, t):
@@ -76,7 +77,7 @@ class GNFA:
 
     def eClosure(self, state, ignore):
         if state >= self.Q:
-            return None
+            return set()
         eStates = { state }
         if '' in self.delta[state]:
             for x in self.delta[state]['']:
@@ -111,7 +112,7 @@ class GNFA:
                 Q |= self.trim( s, ignore )
         return Q
 
-    def condense(self):
+    def Condense(self):
         self.epsilonlessify()
         Q = self.trim(self.s,set())
         mapper = {self.s:0}
@@ -128,13 +129,13 @@ class GNFA:
                     newTrans.add(mapper[q])
                 self.delta[x][k] = newTrans
         self.s = 0
-
         self.delta = [self.delta[x] for x in fromStates]
         self.F = { mapper[x] for x in self.F if x in Q }
         self.Q = len( Q )
+        return self
 
     def Subset(self, Sigma):
-        K = [{self.s}]
+        K = [self.eClosure(self.s,set())]
         total = 0
         marked = -1
         Delta = []
@@ -143,14 +144,12 @@ class GNFA:
             S = K[marked]
             Del = {}
             for a in Sigma:
-                U = set()
-                for x in S:
-                    if a in self.delta[x].keys():
-                        U |= self.delta[x][a]
-                if U not in K:
+                U = set.union( * [ self.delta[q][a] if a in self.delta[q].keys() else set() for q in S ] ) if len( S ) > 0 else set()
+                T = set.union( * [ self.eClosure( q, set() ) for q in U ] ) if len( U ) > 0 else set()
+                if T not in K:
                     total += 1
-                    K.append( U )
-                Del[a] = {K.index(U)}
+                    K.append( T )
+                Del[a] = {K.index(T)}
             Delta.append( Del )
         F = { K.index(S) for S in K if len( S.intersection( self.F ) ) > 0 }
         self.Q = total + 1
@@ -158,16 +157,22 @@ class GNFA:
         self.delta = Delta
         self.F = F
         return self
-            
+
+    def Alphabet(self):
+        return ''.join( set.union( * [ set( d.keys() ) for d in self.delta ] ) )
+
     def Minimize(self):
         return self
 
-    def Accepts(self, w):
-        Q = {self.s}
+    def Accepts(self, w, sing):
+        Q = self.eClosure( self.s, set() )
         for a in w:
+            if sing:
+                print random.choice( ( "do", "de", "da" ) ),
             Q = set.union( * [ self.delta[p][a] if a in self.delta[p] else set() for p in Q ] )
             if len( Q ) == 0:
                 return False
+            Q = set.union( * [ self.eClosure( q, set() ) for q in Q ] )
         return len( Q & self.F ) > 0
 
     def drawing(self):
@@ -175,22 +180,17 @@ class GNFA:
         Write a Dot representation of this DFA to stdout.
         (Stolen from Mr. M. Moeller)
         """
-
         print "digraph g {"
         print "    rankdir=LR"
         print "    qnull[color=white,fontcolor=white]"
-
         # Create nodes
         for state in range(self.Q):
             accepting = ''
             if state in self.F:
                 accepting = ',peripheries=2'
-
             print '    q' + str(state) + '[shape=circle,label="' + str(state) + '"' + accepting + '];'
-
         # Create the "start" transition
         print '\n    qnull -> q'+str(self.s)
-
         # Create the real transitions
         for state in range(self.Q):
             inverted = {}
@@ -200,16 +200,12 @@ class GNFA:
                         name = "epsilon"
                     else:
                         name = letter
-
                     if destination in inverted:
                         inverted[destination] += ","+letter
                     else:
                         inverted[destination] = name
-
             for destination in inverted:
                 print '    q' + str(state) +\
                       ' -> q' + str(destination) +\
                       '[label="' + inverted[destination] + '"];'
-
-
         print "}"
