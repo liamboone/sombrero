@@ -175,6 +175,9 @@ class GNFA:
             Q = set.union( * [ self.eClosure( q, set() ) for q in Q ] )
         return len( Q & self.F ) > 0
 
+    def tableFill(self):
+        pass
+
     def drawing(self):
         """
         Write a Dot representation of this DFA to stdout.
