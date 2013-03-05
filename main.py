@@ -120,7 +120,8 @@ class Shombrero(cmd.Cmd):
         for arg in tokens:
             sigma = self.regexs[ arg ][1].Alphabet( )
             if arg in self.regexs:
-                self.regexs[ arg ][1].Subset( sigma )
+                r, R = self.regexs[ arg ]
+                self.regexs[ arg ] = (r, R.Subset( sigma ))
 
     def do_terse(self, args):
         tokens = args.strip().split()

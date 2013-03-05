@@ -4,6 +4,83 @@ import pdb
 import copy
 import random
 
+class DFA:
+    def __init__(self, sigma, Q, delta, s, F):
+        self.sigma = sigma
+        self.Q = Q
+        self.delta = delta
+        self.s = s
+        self.F = F
+
+    def __repr__(self):
+        rep = ["    "+" | ".join(self.sigma)]
+        rep.append("    "+"-+-".join(["-"]*len(self.sigma)))
+        for i in xrange(len(self.delta)):
+            d = self.delta[i]
+            pre = " -> " if self.s == i else "    "
+            post = " *" if i in self.F else "" 
+            rep.append(pre+" | ".join([str(x) for x in d])+post)
+        return "\n".join(rep)
+
+    def Accepts(self, w, sing):
+        Q = self.s
+        for a in w:
+            if sing:
+                print random.choice( ( "do", "de", "da" ) ),
+            if a not in self.sigma:
+                return False
+            Q = self.delta[Q][self.sigma.index(a)]
+        return Q in self.F
+
+    def tableFill(self):
+        bad = lambda p,q: ( p not in self.F and q in self.F ) \
+                or ( p in self.F and q not in self.F )
+        table = [[bad(i,j) for i in range( j+1 )] \
+                for j in range( self.Q )]
+        idx = [(i,j) for i in range( 1, self.Q ) \
+                for j in range( i ) if not table[i][j]]
+        updated = True
+        while updated:
+            updated = False
+            for (p,q) in idx:
+                if not table[p][q]:
+                    for a in self.sigma:
+                        i = self.delta[p][self.sigma.index(a)]
+                        j = self.delta[q][self.sigma.index(a)]
+                        if i < j:
+                            i = i^j
+                            j = i^j
+                            i = i^j
+                        if table[i][j]:
+                            table[p][q] = True
+                            updated = True
+                            break
+        partition = [ {i,j} for i,j in idx if not table[i][j] ]
+        P = [ {i} for i in range( self.Q ) ]
+        for p in P:
+            for g in partition:
+                if len( p & g ) > 0:
+                    p |= g
+        checked = []
+        for x in P:
+            if x not in checked:
+                checked.append(x)
+        P = checked
+        rename = { i:j for j in range( len( P ) ) for i in P[j] }
+        delta = []
+        for S in P:
+            i = iter(S).next()
+            d = []
+            for a in self.sigma:
+                j = self.delta[i][self.sigma.index(a)]
+                d.append( rename[j] )
+            delta.append( d )
+        self.s = rename[self.s]
+        self.Q = len( P )
+        self.delta = delta
+        self.F = {rename[f] for f in self.F}
+
+
 class NFA:
     def __init__(self, Q, delta, s, F):
         self.Q = Q          #Number of states in NFA
@@ -77,8 +154,7 @@ class NFA:
                     eStates |= self.eClosure( x, eStates )
         return eStates
 
-    def epsilonlessify(self):
-        #get rid of epsilon transitions
+    def epsilonlessify(self): # get rid of epsilon transitions
         for state in range( self.Q ):
             eps = self.eClosure(state, set())
             if len( self.F.intersection( eps ) ) > 0:
@@ -134,27 +210,23 @@ class NFA:
         while marked < total:
             marked += 1
             S = K[marked]
-            Del = {}
+            Del = []
             for a in Sigma:
                 U = set.union( * [ self.delta[q][a] if a in self.delta[q].keys() else set() for q in S ] ) if len( S ) > 0 else set()
                 T = set.union( * [ self.eClosure( q, set() ) for q in U ] ) if len( U ) > 0 else set()
                 if T not in K:
                     total += 1
                     K.append( T )
-                Del[a] = {K.index(T)}
+                Del.append(K.index(T))
             Delta.append( Del )
-        F = { K.index(S) for S in K if len( S.intersection( self.F ) ) > 0 }
-        self.Q = total + 1
-        self.s = 0
-        self.delta = Delta
-        self.F = F
-        return self
+        F = {K.index(S) for S in K if len(S.intersection(self.F)) > 0}
+        return DFA(Sigma,total+1,Delta,0,F)
 
     def Alphabet(self):
         return ''.join( set.union( * [ set( d.keys() ) for d in self.delta ] ) )
 
     def Minimize(self):
-        return self
+        pass
 
     def Accepts(self, w, sing):
         Q = self.eClosure( self.s, set() )
@@ -166,56 +238,6 @@ class NFA:
                 return False
             Q = set.union( * [ self.eClosure( q, set() ) for q in Q ] )
         return len( Q & self.F ) > 0
-
-    def tableFill(self):
-        sigma = self.Alphabet( )
-        self.Subset( sigma )
-        bad = lambda p,q: ( p not in self.F and q in self.F ) \
-                or ( p in self.F and q not in self.F )
-        table = [[bad(i,j) for i in range( j+1 )] \
-                for j in range( self.Q )]
-        idx = [(i,j) for i in range( 1, self.Q ) \
-                for j in range( i ) if not table[i][j]]
-        updated = True
-        while updated:
-            updated = False
-            for (p,q) in idx:
-                if not table[p][q]:
-                    for a in sigma:
-                        i = iter(self.delta[p][a]).next()
-                        j = iter(self.delta[q][a]).next()
-                        if i < j:
-                            i = i^j
-                            j = i^j
-                            i = i^j
-                        if table[i][j]:
-                            table[p][q] = True
-                            updated = True
-                            break
-        partition = [ {i,j} for i,j in idx if not table[i][j] ]
-        P = [ {i} for i in range( self.Q ) ]
-        for p in P:
-            for g in partition:
-                if len( p & g ) > 0:
-                    p |= g
-        checked = []
-        for x in P:
-            if x not in checked:
-                checked.append(x)
-        P = checked
-        rename = { i:j for j in range( len( P ) ) for i in P[j] }
-        delta = []
-        for S in P:
-            i = iter(S).next()
-            d = {}
-            for a in sigma:
-                j = iter(self.delta[i][a]).next()
-                d[a] = {rename[j]}
-            delta.append( d )
-        self.s = rename[self.s]
-        self.Q = len( P )
-        self.delta = delta
-        self.F = {rename[f] for f in self.F}
 
     def drawing(self):
         """
