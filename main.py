@@ -3,7 +3,7 @@ import re
 import cmd
 import readline
 import pdb
-from NFA import GNFA
+from NFA import SNFA
 
 def Sombrero( str ):
     items = []
@@ -53,14 +53,14 @@ def Sombrero( str ):
             N = stack.pop()
             stack.append( stack.pop().union( N ) )
         else:
-            stack.append( GNFA( 2, [{x:{1}},{}], 0, 1 ) )
+            stack.append( SNFA( 2, [{x:{1}},{}], 0, 1 ) )
     #Problem: At this point we might have a stack of disjoint NFAs.
     #Solution: cat ALL the NFAs
     while len( stack ) > 1:
         N = stack.pop()
         stack.append( stack.pop().cat( N ) )
 
-    return verbose, stack[0]
+    return verbose, stack[0].toNFA()
 
 class Shombrero(cmd.Cmd):
     def __init__(self):
@@ -109,12 +109,18 @@ class Shombrero(cmd.Cmd):
                 print self.regexs[tokens[0]][1].Accepts( w, self.singing ),
         print
 
-    def do_subset(self, args):
+    def do_min(self, args):
         tokens = args.strip().split()
-        sigma = " ".join( tokens[1:] )
         for arg in tokens:
             if arg in self.regexs:
-                self.regexs[ arg ][1].Subset( self.regexs[ arg ][1].Alphabet() )
+                self.regexs[ arg ][1].tableFill()
+
+    def do_subset(self, args):
+        tokens = args.strip().split()
+        for arg in tokens:
+            sigma = self.regexs[ arg ][1].Alphabet( )
+            if arg in self.regexs:
+                self.regexs[ arg ][1].Subset( sigma )
 
     def do_terse(self, args):
         tokens = args.strip().split()

@@ -1,15 +1,15 @@
 __author__ = 'liam'
 
+import pdb
 import copy
 import random
 
-class GNFA:
-    def __init__(self, Q, delta, s, t):
+class NFA:
+    def __init__(self, Q, delta, s, F):
         self.Q = Q          #Number of states in NFA
-        self.delta = delta  #list of dicts of sets representing transitions. list has Q elements
+        self.delta = delta  #list of dicts of sets, list has Q elements
         self.s = s          #Start state
-        self.t = t          #Accepting states
-        self.F = {t}
+        self.F = F          #Accepting state
 
     def __repr__(self):
         rep = []
@@ -19,61 +19,53 @@ class GNFA:
                 item.append( " ->" )
             else:
                 item.append( "   " )
-            item.append( self.delta[i].__repr__() )
+            P={}
+            for a in self.delta[i].keys():
+                P[a]="{"+", ".join([str(s) for s in self.delta[i][a]])+"}"
+           
+            item.append("("+" ".join([repr(a)+":"+P[a] for a in P.keys()])+")")
             if i in self.F:
                 item.append( "*" )
             rep.append( " ".join( item ) )
         return "\n".join(rep)
-
-    def cat(self, nfa):
-        """
-        "'WRREEEEARH!' ... That was the cat." - Jean Gallier
-        """
-        gnfa = copy.deepcopy(nfa)
+    
+    def toSNFA(self):
+        delta = self.delta
         Q = self.Q
-        self.Q += gnfa.Q
-        for delta in gnfa.delta:
-            for k in delta.keys():
-                dk = set()
-                for v in delta[ k ]:
-                    dk.add( v + Q )
-                delta[ k ] = dk
-            self.delta.append( delta )
-        self.delta[self.t][''] = {gnfa.s + Q}
-        self.t = gnfa.t+Q
-        self.F = {self.t}
-        return self
-
-    def union(self,nfa):
-        gnfa = copy.deepcopy(nfa)
-        Q = self.Q
-        self.Q += gnfa.Q + 2
-        for delta in gnfa.delta:
-            for k in delta.keys():
-                dk = set()
-                for v in delta[ k ]:
-                    dk.add( v + Q )
-                delta[ k ] = dk
-            self.delta.append( delta )
-        self.delta[self.t][''] = {Q + gnfa.Q + 1}
-        self.delta[gnfa.t+Q][''] = {Q + gnfa.Q + 1}
-        self.delta.append( { '' : {self.s, gnfa.s+Q} } )
-        self.delta.append( {} )
-        self.s = Q + gnfa.Q
-        self.t = Q + gnfa.Q + 1
-        self.F = {self.t}
-        return self
-
-    def sombrero(self):
-        Q = self.Q
-        self.Q += 2
-        self.delta[self.t][''] = {self.s, Q+1}
-        self.delta.append( { '':{self.s, Q+1} } )
-        self.delta.append( {} )
-        self.s = Q
-        self.t = Q + 1
-        self.F = {self.t}
-        return self
+        validStart = True
+        for d in delta:
+            for a in d.keys():
+                if self.s in d[a]:
+                    validStart = False
+                    break
+        if validStart:
+            s = self.s # No inbound transitions, s is a propper source
+        else:
+            s = self.Q
+            Q += 1
+            delta.append({'':{self.s}})
+        if len( self.F ) == 1:  # Singular accepting state
+            f = iter(self.F).next()
+            if len(delta[f].keys()) == 0:
+                t = f # No outbound transitions, f is a sink
+            else:
+                if '' in delta[f]:
+                    delat[f][''] |= {Q}
+                else:
+                    delta[f][''] = {Q}
+                delta.append({})
+                t = Q
+                Q += 1
+        else:
+            for f in self.F:
+                if '' in delta[f]:
+                    delta[f][''] |= {Q}
+                else:
+                    delta[f][''] = {Q}
+                delta.append({})
+                t = Q
+                Q += 1
+        return SNFA( Q, delta, s, F )
 
     def eClosure(self, state, ignore):
         if state >= self.Q:
@@ -176,7 +168,54 @@ class GNFA:
         return len( Q & self.F ) > 0
 
     def tableFill(self):
-        pass
+        sigma = self.Alphabet( )
+        self.Subset( sigma )
+        bad = lambda p,q: ( p not in self.F and q in self.F ) \
+                or ( p in self.F and q not in self.F )
+        table = [[bad(i,j) for i in range( j+1 )] \
+                for j in range( self.Q )]
+        idx = [(i,j) for i in range( 1, self.Q ) \
+                for j in range( i ) if not table[i][j]]
+        updated = True
+        while updated:
+            updated = False
+            for (p,q) in idx:
+                if not table[p][q]:
+                    for a in sigma:
+                        i = iter(self.delta[p][a]).next()
+                        j = iter(self.delta[q][a]).next()
+                        if i < j:
+                            i = i^j
+                            j = i^j
+                            i = i^j
+                        if table[i][j]:
+                            table[p][q] = True
+                            updated = True
+                            break
+        partition = [ {i,j} for i,j in idx if not table[i][j] ]
+        P = [ {i} for i in range( self.Q ) ]
+        for p in P:
+            for g in partition:
+                if len( p & g ) > 0:
+                    p |= g
+        checked = []
+        for x in P:
+            if x not in checked:
+                checked.append(x)
+        P = checked
+        rename = { i:j for j in range( len( P ) ) for i in P[j] }
+        delta = []
+        for S in P:
+            i = iter(S).next()
+            d = {}
+            for a in sigma:
+                j = iter(self.delta[i][a]).next()
+                d[a] = {rename[j]}
+            delta.append( d )
+        self.s = rename[self.s]
+        self.Q = len( P )
+        self.delta = delta
+        self.F = {rename[f] for f in self.F}
 
     def drawing(self):
         """
@@ -212,3 +251,65 @@ class GNFA:
                       ' -> q' + str(destination) +\
                       '[label="' + inverted[destination] + '"];'
         print "}"
+
+
+class SNFA:
+    def __init__(self, Q, delta, s, t):
+        self.Q = Q          #Number of states in NFA
+        self.delta = delta  #list of dicts of sets, list has Q elements
+        self.s = s          #Start state
+        self.t = t          #Accepting states
+        self.F = {t}
+
+    def cat(self, nfa):
+        """
+        "'WRREEEEARH!' ... That was the cat." - Jean Gallier
+        """
+        gnfa = copy.deepcopy(nfa)
+        Q = self.Q
+        self.Q += gnfa.Q
+        for delta in gnfa.delta:
+            for k in delta.keys():
+                dk = set()
+                for v in delta[ k ]:
+                    dk.add( v + Q )
+                delta[ k ] = dk
+            self.delta.append( delta )
+        self.delta[self.t][''] = {gnfa.s + Q}
+        self.t = gnfa.t+Q
+        self.F = {self.t}
+        return self
+
+    def union(self, nfa):
+        gnfa = copy.deepcopy(nfa)
+        Q = self.Q
+        self.Q += gnfa.Q + 2
+        for delta in gnfa.delta:
+            for k in delta.keys():
+                dk = set()
+                for v in delta[ k ]:
+                    dk.add( v + Q )
+                delta[ k ] = dk
+            self.delta.append( delta )
+        self.delta[self.t][''] = {Q + gnfa.Q + 1}
+        self.delta[gnfa.t+Q][''] = {Q + gnfa.Q + 1}
+        self.delta.append( { '' : {self.s, gnfa.s+Q} } )
+        self.delta.append( {} )
+        self.s = Q + gnfa.Q
+        self.t = Q + gnfa.Q + 1
+        self.F = {self.t}
+        return self
+
+    def sombrero(self):
+        Q = self.Q
+        self.Q += 2
+        self.delta[self.t][''] = {self.s, Q+1}
+        self.delta.append( { '':{self.s, Q+1} } )
+        self.delta.append( {} )
+        self.s = Q
+        self.t = Q + 1
+        self.F = {self.t}
+        return self
+
+    def toNFA(self):
+        return NFA(self.Q, self.delta, self.s, {self.t})
