@@ -1,2 +1,2 @@
-all: main.py
-	python main.py
+all: shombrero.py
+	python shombrero.py

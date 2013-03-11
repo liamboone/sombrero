@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript"
+        src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/js/sijax/sijax.js"></script>
+    <script type="text/javascript" src="/static/js/sijax/sijax_comet.js"></script>
+    <script type="text/javascript">
+        {{ g.sijax.get_js()|safe }}
+    </script>
+</head>
+
+<body>
+    <div id="cmds" style="margin-bottom: 20px; padding: 5px;" data-exprs=""></div>
+
+    <form id="cmdForm" name="cmdForm">
+        ~^~ <input type="text" id="cmd" style="width: 400px" />
+        <input type="submit" value="Send" />
+        <button id="btnClear">Clear</button>
+    </form>
+    
+    <script type="text/javascript">
+    $(function() {
+        $('#cmdForm').bind('submit', function() {
+            sjxComet.request('save_cmd', [$('#cmd').attr('value'), $('#cmds').attr('data-exprs')]);
+            return false;
+        });
+        $('#cmd').focus();
+        $('#btnClear').bind('click', function() {
+            sjxComet.request('clear_screen');
+            return false;
+        });
+    });
+    </script>
+</body>
+</html>
+
