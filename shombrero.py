@@ -113,7 +113,7 @@ class Shombrero(cmd.Cmd):
         tokens = args.strip().split()
         for arg in tokens:
             if arg in self.regexs:
-                self.regexs[ arg ][1].tableFill()
+                self.regexs[ arg ][1].TableFill()
 
     def do_subset(self, args):
         tokens = args.strip().split()

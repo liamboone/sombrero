@@ -32,7 +32,7 @@ class DFA:
             Q = self.delta[Q][self.sigma.index(a)]
         return Q in self.F
 
-    def tableFill(self):
+    def TableFill(self):
         bad = lambda p,q: ( p not in self.F and q in self.F ) \
                 or ( p in self.F and q not in self.F )
         table = [[bad(i,j) for i in range( j+1 )] \
@@ -80,13 +80,85 @@ class DFA:
         self.delta = delta
         self.F = {rename[f] for f in self.F}
 
+    def ForwardClosure(self,p,q):
+        part = [ [None,s,1] for s in xrange(self.Q) ]
+        stack = [(p,q)]
+        while len( stack ) > 0:
+            uu, vv = stack.pop()
+            if self.bad(uu,vv):
+                print uu, vv
+                return (False, part)
+            u = self.find( uu, part )
+            v = self.find( vv, part )
+            if u[1] != v[1]:
+                self.union( u[1], v[1], part )
+                for i in xrange( len( self.sigma ) ):
+                    u1 = self.delta[uu][i]
+                    v1 = self.delta[vv][i]
+                    stack.append( (u1,v1) )
+        return (True, part)
 
-class NFA:
+    def bad(self,p,q):
+        if p in self.F and q not in self.F:
+            return True
+        if p not in self.F and q in self.F:
+            return True
+        return False
+
+    def union(self,p,q,part):
+        P = self.find( p, part )
+        Q = self.find( q, part )
+        if P[1] == Q[1]:
+            return
+        if P[2] < Q[2]:
+            part[P[1]][0] = Q[1]
+            part[Q[1]][2] += P[2]
+        else:
+            part[Q[1]][0] = P[1]
+            part[P[1]][2] += Q[2]
+
+    def find(self,p,part):
+        path = []
+        q = part[p]
+        while q[0] is not None:
+            path.append(q[1])
+            q = part[q[0]]
+        for s in path:
+            part[s][0] = q[1]
+        return q
+
+    def Reverse(self): 
+        """
+        Right now this is broken.
+        The resulting NFA does accept the reverse of the language
+        accepted by self, however since I have implemented NFAs
+        as requireing a single start state with possible epsilon 
+        transitions the sequence Resverse, Subset, Reverse, Subset
+        will NOT result in a minimal DFA
+        """
+        Q = self.Q + 1
+        s = self.Q
+        F = { self.s }
+        delta = []
+        for i in xrange( self.Q ):
+            delta.append( {} )
+        delta.append( {'':self.F} )
+        for q in xrange( self.Q ):
+            for i in xrange( len(self.sigma) ):
+                a = self.sigma[i]
+                p = self.delta[q][i]
+                if a in delta[p]:
+                    delta[p][a] |= { q }
+                else:
+                    delta[p][a] = { q }
+        return NFA( Q, delta, s, F )
+
+class NFA: #TODO: allow multiple start states to fix DFA.Reverse
     def __init__(self, Q, delta, s, F):
         self.Q = Q          #Number of states in NFA
         self.delta = delta  #list of dicts of sets, list has Q elements
         self.s = s          #Start state
-        self.F = F          #Accepting state
+        self.F = F          #Set of accepting states
 
     def __repr__(self):
         rep = []
@@ -202,8 +274,11 @@ class NFA:
         self.Q = len( Q )
         return self
 
-    def Subset(self, Sigma):
-        K = [self.eClosure(self.s,set())]
+    def Subset(self, Sigma, start=None):
+        if start:
+            K = [self.eClosure(start,set())]
+        else:
+            K = [self.eClosure(self.s,set())]
         total = 0
         marked = -1
         Delta = []
@@ -273,7 +348,6 @@ class NFA:
                       ' -> q' + str(destination) +\
                       '[label="' + inverted[destination] + '"];'
         print "}"
-
 
 class SNFA:
     def __init__(self, Q, delta, s, t):
