@@ -10,7 +10,7 @@ import pickle
 path = os.path.join('.', os.path.dirname(__file__), '../')
 sys.path.append(path)
 
-import NFA
+import Automata
 from shombrero import Sombrero
 
 from flask import Flask, g, render_template

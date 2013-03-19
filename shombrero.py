@@ -3,7 +3,7 @@ import re
 import cmd
 import readline
 import pdb
-from NFA import SNFA
+from Automata import SNFA,NFA,DFA
 
 def Sombrero( str ):
     items = []
@@ -81,6 +81,7 @@ class Shombrero(cmd.Cmd):
         return -1
 
     def do_EOF(self, args):
+        print
         return self.do_exit(args)
 
     def do_help(self, args):
@@ -112,21 +113,21 @@ class Shombrero(cmd.Cmd):
     def do_min(self, args):
         tokens = args.strip().split()
         for arg in tokens:
-            if arg in self.regexs:
+            if arg in self.regexs and isinstance(self.regexs[ arg ][1], DFA):
                 self.regexs[ arg ][1].TableFill()
 
     def do_subset(self, args):
         tokens = args.strip().split()
         for arg in tokens:
-            sigma = self.regexs[ arg ][1].Alphabet( )
-            if arg in self.regexs:
+            if arg in self.regexs and isinstance(self.regexs[ arg ][1], NFA):
+                sigma = self.regexs[ arg ][1].Alphabet( )
                 r, R = self.regexs[ arg ]
                 self.regexs[ arg ] = (r, R.Subset( sigma ))
 
     def do_terse(self, args):
         tokens = args.strip().split()
         for arg in tokens:
-            if arg in self.regexs:
+            if arg in self.regexs and isinstance(self.regexs[ arg ][1], NFA):
                 self.regexs[ arg ][1].Condense()
 
     def do_print(self, args):
@@ -146,7 +147,6 @@ class Shombrero(cmd.Cmd):
         return line
 
     def postloop(self):
-        print
         cmd.Cmd.postloop(self)
 
     def emptyline(self):
