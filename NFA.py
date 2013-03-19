@@ -80,13 +80,29 @@ class DFA:
         self.delta = delta
         self.F = {rename[f] for f in self.F}
 
+    def printPartition(self,part):
+        pp = []
+        mapping = []
+        for x in part:
+            if x[0] is None:
+                mapping.append( len( pp ) )
+                pp.append( {x[1]} )
+            else:
+                mapping.append( None )
+        for x in part:
+            y = self.find(x[1],part) 
+            pp[mapping[y[1]]].add( x[1] )
+        pstr = '; '.join([' '.join(sorted( [ str( x ) for x in i ] )) for i in pp])
+        print pstr
+
     def ForwardClosure(self,p,q):
         part = [ [None,s,1] for s in xrange(self.Q) ]
         stack = [(p,q)]
         while len( stack ) > 0:
+            self.printPartition( part )
             uu, vv = stack.pop()
             if self.bad(uu,vv):
-                print uu, vv
+                print "Bad pair: (", uu, ",", vv, ")"
                 return (False, part)
             u = self.find( uu, part )
             v = self.find( vv, part )
