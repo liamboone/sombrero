@@ -31,6 +31,9 @@ class DFA:
                 return False
             Q = self.delta[Q][self.sigma.index(a)]
         return Q in self.F
+    
+    def Alphabet(self):
+        return self.sigma
 
     def TableFill(self):
         bad = lambda p,q: ( p not in self.F and q in self.F ) \
@@ -144,16 +147,8 @@ class DFA:
         return q
 
     def Reverse(self): 
-        """
-        Right now this is broken.
-        The resulting NFA does accept the reverse of the language
-        accepted by self, however since I have implemented NFAs
-        as requireing a single start state with possible epsilon 
-        transitions the sequence Resverse, Subset, Reverse, Subset
-        will NOT result in a minimal DFA
-        """
         Q = self.Q + 1
-        s = self.Q
+        S = self.F
         F = { self.s }
         delta = []
         for i in xrange( self.Q ):
@@ -167,20 +162,20 @@ class DFA:
                     delta[p][a] |= { q }
                 else:
                     delta[p][a] = { q }
-        return NFA( Q, delta, s, F )
+        return NFA( Q, delta, S, F ).Condense()
 
-class NFA: #TODO: allow multiple start states to fix DFA.Reverse
-    def __init__(self, Q, delta, s, F):
+class NFA:
+    def __init__(self, Q, delta, S, F):
         self.Q = Q          #Number of states in NFA
         self.delta = delta  #list of dicts of sets, list has Q elements
-        self.s = s          #Start state
+        self.S = S          #Set of start states
         self.F = F          #Set of accepting states
 
     def __repr__(self):
         rep = []
         for i in xrange( len( self.delta ) ):
             item = []
-            if i == self.s:
+            if i in self.S:
                 item.append( " ->" )
             else:
                 item.append( "   " )
@@ -197,18 +192,21 @@ class NFA: #TODO: allow multiple start states to fix DFA.Reverse
     def toSNFA(self):
         delta = self.delta
         Q = self.Q
-        validStart = True
+        validStart = len( self.S ) == 1
         for d in delta:
             for a in d.keys():
-                if self.s in d[a]:
+                if len(self.S & d[a]) > 0:
                     validStart = False
                     break
-        if validStart:
-            s = self.s # No inbound transitions, s is a propper source
+        if validStart: # No inbound transitions, only one start
+            #This is an oddity of python sets where there are no 'good'
+            #methods to extract the element from a set of one
+            #so we cast it to a tuple and then unpack it... gross
+            s, = self.S
         else:
             s = self.Q
             Q += 1
-            delta.append({'':{self.s}})
+            delta.append({'':self.S})
         if len( self.F ) == 1:  # Singular accepting state
             f = iter(self.F).next()
             if len(delta[f].keys()) == 0:
@@ -230,7 +228,7 @@ class NFA: #TODO: allow multiple start states to fix DFA.Reverse
                 delta.append({})
                 t = Q
                 Q += 1
-        return SNFA( Q, delta, s, F )
+        return SNFA( Q, delta, s, t )
 
     def eClosure(self, state, ignore):
         if state >= self.Q:
@@ -270,31 +268,29 @@ class NFA: #TODO: allow multiple start states to fix DFA.Reverse
 
     def Condense(self):
         self.epsilonlessify()
-        Q = self.trim(self.s,set())
-        mapper = {self.s:0}
-        idx = 1
-        fromStates = [self.s]
-        for x in Q:
-            for k in self.delta[x].keys():
-                newTrans = set()
-                for q in self.delta[x][k]:
-                    if q not in mapper:
-                        mapper[q] = idx
-                        fromStates.append( q )
-                        idx += 1
-                    newTrans.add(mapper[q])
-                self.delta[x][k] = newTrans
-        self.s = 0
-        self.delta = [self.delta[x] for x in fromStates]
-        self.F = { mapper[x] for x in self.F if x in Q }
+        Q = set()
+        for s in self.S:
+            Q |= self.trim(s,set())
+        last = len( Q ) - 1
+        mapping = {}
+        for x, e in reversed( list( enumerate( self.delta ) ) ):
+            if x in Q:
+                mapping[x] = last
+                last -= 1
+            else:
+                self.delta.pop( x )
+        for d in self.delta:
+            for a in d.keys():
+                d[a] = { mapping[x] for x in d[a] }
+        self.S = { mapping[x] for x in self.S if x in mapping }
+        self.F = { mapping[x] for x in self.F if x in mapping }
         self.Q = len( Q )
         return self
 
-    def Subset(self, Sigma, start=None):
-        if start:
-            K = [self.eClosure(start,set())]
-        else:
-            K = [self.eClosure(self.s,set())]
+    def Subset(self, Sigma):
+        K = [set()]
+        for s in self.S:
+            K[0] |= self.eClosure(s,set())
         total = 0
         marked = -1
         Delta = []
@@ -320,7 +316,9 @@ class NFA: #TODO: allow multiple start states to fix DFA.Reverse
         pass
 
     def Accepts(self, w, sing):
-        Q = self.eClosure( self.s, set() )
+        Q = set()
+        for s in self.S:
+            Q |= self.eClosure(s,set())
         for a in w:
             if sing:
                 print random.choice( ( "do", "de", "da" ) ),
@@ -337,15 +335,17 @@ class NFA: #TODO: allow multiple start states to fix DFA.Reverse
         """
         print "digraph g {"
         print "    rankdir=LR"
-        print "    qnull[color=white,fontcolor=white]"
+        for s in self.S:
+            print "    qnull" + s + "[color=white,fontcolor=white]"
         # Create nodes
         for state in range(self.Q):
             accepting = ''
             if state in self.F:
                 accepting = ',peripheries=2'
             print '    q' + str(state) + '[shape=circle,label="' + str(state) + '"' + accepting + '];'
-        # Create the "start" transition
-        print '\n    qnull -> q'+str(self.s)
+        # Create the "start" transitions
+        for s in self.S:
+            print '\n    qnull' + str(s) + ' -> q'+str(s)
         # Create the real transitions
         for state in range(self.Q):
             inverted = {}
@@ -424,4 +424,4 @@ class SNFA:
         return self
 
     def toNFA(self):
-        return NFA(self.Q, self.delta, self.s, {self.t})
+        return NFA(self.Q, self.delta, {self.s}, {self.t})

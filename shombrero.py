@@ -63,6 +63,11 @@ def Sombrero( str ):
     return verbose, stack[0].toNFA()
 
 class Shombrero(cmd.Cmd):
+    """
+    Reverse breaks variable assignments because reversing a
+    regular expressing is too annoying to code right now.
+    might be time to not have variables be a sloppy hack
+    """
     def __init__(self):
         self.var = re.compile("\$(_*[A-Za-z][A-Za-z0-9_]*)")
         self.regexs = {}
@@ -102,6 +107,12 @@ class Shombrero(cmd.Cmd):
         verbose, N = Sombrero( regex )
         #N.condense()
         self.regexs[ tokens[0] ] = ( regex, N )
+
+    def do_reverse(self, args):
+        tokens = args.strip().split()
+        for arg in tokens:
+            if arg in self.regexs and isinstance(self.regexs[ arg ][1], DFA):
+                self.regexs[ arg ] = ("",self.regexs[ arg ][1].Reverse())
 
     def do_eval(self, args):
         tokens = args.strip().split()
