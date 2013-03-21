@@ -13,13 +13,13 @@ class DFA:
         self.F = F
 
     def __repr__(self):
-        rep = ["    "+" | ".join(self.sigma)]
-        rep.append("    "+"-+-".join(["-"]*len(self.sigma)))
+        rep = ["      | "+" | ".join(self.sigma)]
+        rep.append("    --+-"+"-+-".join(["-"]*len(self.sigma)))
         for i in xrange(len(self.delta)):
             d = self.delta[i]
             pre = " -> " if self.s == i else "    "
             post = " *" if i in self.F else "" 
-            rep.append(pre+" | ".join([str(x) for x in d])+post)
+            rep.append(pre+str(i)+" | "+" | ".join([str(x) for x in d])+post)
         return "\n".join(rep)
 
     def Accepts(self, w, sing):
@@ -96,17 +96,22 @@ class DFA:
             y = self.find(x[1],part) 
             pp[mapping[y[1]]].add( x[1] )
         pstr = '; '.join([' '.join(sorted( [ str( x ) for x in i ] )) for i in pp])
-        print pstr
+        return pstr
 
-    def ForwardClosure(self,p,q):
+    def ForwardClosure(self,p,q,gen=None):
         part = [ [None,s,1] for s in xrange(self.Q) ]
         stack = [(p,q)]
         while len( stack ) > 0:
-            self.printPartition( part )
+            pstr = self.printPartition( part )
+            if gen:
+                yield pstr
+            else:
+                print pstr
             uu, vv = stack.pop()
             if self.bad(uu,vv):
-                print "Bad pair: (", uu, ",", vv, ")"
-                return (False, part, (uu,vv))
+                print "Bad pair: (", uu,  ",", vv, ")"
+                yield (False, part, (uu,vv))
+                return
             u = self.find( uu, part )
             v = self.find( vv, part )
             if u[1] != v[1]:
@@ -114,8 +119,8 @@ class DFA:
                 for i in xrange( len( self.sigma ) ):
                     u1 = self.delta[uu][i]
                     v1 = self.delta[vv][i]
-                    stack.append( (u1,v1) )
-        return (True, part, None)
+                    stack.append( (u1,v1)  )
+        yield (True, part, None)
 
     def bad(self,p,q):
         if p in self.F and q not in self.F:

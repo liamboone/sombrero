@@ -51,17 +51,17 @@
         <script type="text/javascript">
 
             var links = [
-                        {source: "0", target: "1", type: "normal"},
-                        {source: "0", target: "2", type: "normal"},
-                        {source: "1", target: "1", type: "self"},
-                        {source: "1", target: "3", type: "normal"},
-                        {source: "2", target: "1", type: "normal"},
-                        {source: "2", target: "2", type: "self"},
-                        {source: "3", target: "1", type: "normal"},
-                        {source: "3", target: "4", type: "normal"},
-                        {source: "4", target: "1", type: "normal"},
-                        {source: "4", target: "2", type: "normal"},
-                        ];
+                {source: "0", target: "1", type: "normal", value: "a"},
+                {source: "0", target: "2", type: "normal", value: "b"},
+                {source: "1", target: "1", type: "self", value: "a"},
+                {source: "1", target: "3", type: "normal", value: "b"},
+                {source: "2", target: "1", type: "normal", value: "a"},
+                {source: "2", target: "2", type: "self", value: "b"},
+                {source: "3", target: "1", type: "normal", value: "a"},
+                {source: "3", target: "4", type: "normal", value: "b"},
+                {source: "4", target: "1", type: "normal", value: "a"},
+                {source: "4", target: "2", type: "normal", value: "b"},
+                ];
 
             var nodes = {};
 
@@ -106,11 +106,17 @@
                 .enter().append("svg:path")
                 .attr("class", function(d) { return "link " + d.type; })
                 .attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
+            var linkText = svg.selectAll(".link self")
+                .data(force.links())
+                .append("text")
+                .attr("x", -10)
+                .attr("y", ".31em")
+                .text(function(d) { return "A"; });
 
             var circle = svg.append("svg:g").selectAll("circle")
                 .data(force.nodes())
                 .enter().append("svg:circle")
-                .attr("r", 20)
+                .attr("r", 0)
                 .call(force.drag);
 
             var text = svg.append("svg:g").selectAll("g")
@@ -161,6 +167,12 @@
                 text.attr("transform", function(d) {
                     return "translate(" + d.x + "," + d.y + ")";
                 });
+                linkText.attr("x", function(d) {
+                    return (d.target.x + (d.source.x - d.target.x)/2);
+                }
+                linkText.attr("y", function(d) {
+                    return (d.target.y + (d.source.y - d.target.y)/2);
+                }
             }
         </script>
     </body>

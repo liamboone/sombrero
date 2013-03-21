@@ -1,0 +1,3 @@
+Usage: hw4B2.py DFA.txt Query.txt Partition.txt Test.txt
+
+due to the fact that the implementation is zero indexed and the examples are one indexed, what is output to the screen will be slightly different than what is read in and saved out.

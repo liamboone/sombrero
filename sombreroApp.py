@@ -34,10 +34,12 @@ class CometHandler(object):
         else:
             regs = pickle.loads( data )
         regs[varName] = Sombrero( varExpr )
-        regs[varName][1].Subset( regs[varName][1].Alphabet() )
+        D = regs[varName][1].Subset( regs[varName][1].Alphabet() )
+        regs[varName] = (regs[varName][0],D)
 
         cmd = varName + " := " + varExpr
-        print cmd
+        cmd = cmd + "\n<pre><code>" + repr(D) + "</code></pre>"
+        cmd = cmd.replace('\n','<br>')
         obj_response = CometHandler.update_cmd(obj_response, cmd, regs)
         yield obj_response
 
@@ -73,6 +75,30 @@ class CometHandler(object):
         cmd = '%s %s "%s"' % (varName, ("accepts" if accepted else "rejects"), varExpr)
         obj_response = CometHandler.update_cmd(obj_response, cmd, regs)
         yield obj_response
+
+    @staticmethod
+    def fc_cmd(obj_response, varName, varExpr, data):
+        if data == '':
+            regs = {}
+            return
+        else:
+            regs = pickle.loads( data )
+
+        if varName not in regs:
+            return
+
+        p, q = ( int( x ) for x in varExpr.split() )
+        partitions = []
+        for x in regs[varName][1].ForwardClosure(p,q,True):
+            partitions.append( x )
+        good, part, bad = partitions.pop()
+
+        bgs = ["#aaa","#ddd"]
+
+        if good:
+            obj_response = CometHandler.update_cmd(obj_response, str(p)+" is equivalent to "+str(q), regs)
+        else:
+            obj_response = CometHandler.update_cmd(obj_response, str(p)+" is not equivalent to "+str(q), regs)
 
     @staticmethod
     def update_cmd(obj_response, cmd, regs):
@@ -191,9 +217,9 @@ def index():
 
     return render_template('sombrero.html')
 
-@app.route("/graph")
-def graph():
-    return render_template('graph.html')
+#@app.route("/graph")
+#def graph():
+#    return render_template('graph.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT',5000))

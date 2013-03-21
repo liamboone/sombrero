@@ -1,60 +1,73 @@
 <!doctype html>
 <html>
-<head>
-    <script type="text/javascript"
-        src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
-    <script type="text/javascript" src="/static/js/sijax/sijax.js"></script>
-    <script type="text/javascript" src="/static/js/sijax/sijax_comet.js"></script>
-    <script type="text/javascript">
-        {{ g.sijax.get_js()|safe }}
-    </script>
-    <title>Sombrero</title>
-</head>
+    <head>
+        <script type="text/javascript"
+            src="http://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+        <script type="text/javascript" src="/static/js/sijax/sijax.js"></script>
+        <script type="text/javascript" src="/static/js/sijax/sijax_comet.js"></script>
+        <script type="text/javascript">
+            {{ g.sijax.get_js()|safe }}
+        </script>
+        <title>Sombrero</title>
+    </head>
 
-<body>
-    <div id="DFAscreen" style="margin-bottom: 20px; padding: 5px;"></div>
-    <div id="cmds" style="margin-bottom: 20px; padding: 5px;" data-exprs=""></div>
+    <body>
+        <div id="cmds" style="margin-bottom: 20px; padding: 5px;" data-exprs=""></div>
 
-    <form id="cmdForm" name="cmdForm">
-        ~^~ 
-        <select id="cmd">
-            <option value="LET" selected="selected">Let</option>
-            <option value="EVAL">Evaluate</option>
-            <option value="VIEW">View</option>
-        </select>
-        <input type="text" id="varName" style="width: 40px" />
-        <input type="text" id="varExpr" style="width: 400px" />
-        <input type="submit" value="Send" />
-        <button id="btnClear">Clear</button>
-    </form>
-    
-    <script type="text/javascript">
-    $(function() {
-        $('#cmdForm').bind('submit', function() {
-            if( $('#cmd').attr('value') == 'LET' )
-            {
-            sjxComet.request('let_cmd', [ 
-                $('#varName').attr('value'), 
-                $('#varExpr').attr('value'),
-                $('#cmds').attr('data-exprs')]);
-            }
-            else
-            {
-            sjxComet.request('save_cmd', [
-                $('#cmd').attr('value'), 
-                $('#varName').attr('value'), 
-                $('#varExpr').attr('value'),
-                $('#cmds').attr('data-exprs')]);
-            }
-            return false;
+        <form id="cmdForm" name="cmdForm">
+            ~^~ 
+            <select id="cmd">
+                <option value="LET" selected="selected">Let</option>
+                <option value="EVAL">Evaluate</option>
+                <option value="FC">Forward Closure</option>
+            </select>
+            <input type="text" id="varName" style="width: 40px" />
+            <input type="text" id="varExpr" style="width: 400px" />
+            <input type="submit" value="Send" />
+            <button id="btnClear">Clear</button>
+        </form>
+        
+        <script type="text/javascript">
+        $(function() {
+            $('#cmdForm').bind('submit', function() {
+                if( $('#cmd').attr('value') == 'LET' )
+                {
+                sjxComet.request('let_cmd', [ 
+                    $('#varName').attr('value'), 
+                    $('#varExpr').attr('value'),
+                    $('#cmds').attr('data-exprs')]);
+                }
+                else if( $('#cmd').attr('value') == 'FC' )
+                {
+                sjxComet.request('fc_cmd', [ 
+                    $('#varName').attr('value'), 
+                    $('#varExpr').attr('value'),
+                    $('#cmds').attr('data-exprs')]);
+                }
+                else if( $('#cmd').attr('value') == 'EVAL' )
+                {
+                sjxComet.request('eval_cmd', [ 
+                    $('#varName').attr('value'), 
+                    $('#varExpr').attr('value'),
+                    $('#cmds').attr('data-exprs')]);
+                }
+                else
+                {
+                sjxComet.request('save_cmd', [
+                    $('#cmd').attr('value'), 
+                    $('#varName').attr('value'), 
+                    $('#varExpr').attr('value'),
+                    $('#cmds').attr('data-exprs')]);
+                }
+                return false;
+            });
+            $('#cmd').focus();
+            $('#btnClear').bind('click', function() {
+                sjxComet.request('clear_screen');
+                return false;
+            });
         });
-        $('#cmd').focus();
-        $('#btnClear').bind('click', function() {
-            sjxComet.request('clear_screen');
-            return false;
-        });
-    });
-    </script>
-</body>
+        </script>
+    </body>
 </html>
 
