@@ -1,4 +1,5 @@
 #! /usr/bin/python
+import pdb
 import sys
 from Automata import DFA
 
@@ -28,7 +29,8 @@ for line in finQuery:
     p = int(words[0])-1
     q = int(words[1])-1
     print '\nTesting Pair (%d, %d)\n' % (p,q)
-    found, part, badPair = D.ForwardClosure( p, q )
+    for x in D.ForwardClosure( p, q ):
+        found, part, badPair = x
     pp = []
     mapping = []
     for x in part:

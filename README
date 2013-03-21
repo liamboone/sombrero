@@ -1,0 +1,57 @@
+Usage: hw4B2.py DFA.txt Query.txt Partition.txt Test.txt
+
+due to the fact that the implementation is zero indexed and the examples are one indexed, what is output to the screen will be slightly different than what is read in and saved out.
+
+Extras: 
+
+shell like access:
+Usage: python shombrero.py
+
+commands:
+
+let - create an NFA from a given regular expression
+usage:
+     Regular Expression
+             |
+~^~ let R (a+b)*abb
+        |
+     Variable Name
+
+print - print out an NFA or DFA
+usage:
+~^~ print R
+
+subset - create a DFA from an NFA using subset construction. overwites variable
+usage:
+~^~ subset R
+
+reverse - compute the reversed NFA from a DFA. overwites variable
+usage:
+~^~ reverse R
+
+eval - test an NFA or DFA on a specific word. says true or false if the language accepts or rejects
+usage:
+~^~ eval R word
+
+sing - initiates sining mode
+usage:
+~^~ sing
+
+min - minimizes a DFA. overwites variable
+usage:
+~^~ min R
+
+
+Website:
+sombrero.herokuapp.com
+
+currently there are only three commands available through a dropdown menu. 
+The variable to be used/operated on is input into the smaller text box and any additional parameters are placed in the larger text box.
+
+let takes a variable and a regular expression and produces a DFA
+
+eval takes a a variable and a word and tells if the DFA accepts or rejects it
+
+forward closure takes a variable and a string of the form "p q" where p and q are zero indexed states from the DFA specified by variable. This will say if two states are equivalent or not.
+
+
