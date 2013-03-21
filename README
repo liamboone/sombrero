@@ -54,4 +54,3 @@ eval takes a a variable and a word and tells if the DFA accepts or rejects it
 
 forward closure takes a variable and a string of the form "p q" where p and q are zero indexed states from the DFA specified by variable. This will say if two states are equivalent or not.
 
-
