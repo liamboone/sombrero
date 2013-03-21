@@ -12,10 +12,18 @@
 </head>
 
 <body>
+    <div id="DFAscreen" style="margin-bottom: 20px; padding: 5px;"></div>
     <div id="cmds" style="margin-bottom: 20px; padding: 5px;" data-exprs=""></div>
 
     <form id="cmdForm" name="cmdForm">
-        ~^~ <input type="text" id="cmd" style="width: 400px" />
+        ~^~ 
+        <select id="cmd">
+            <option value="LET" selected="selected">Let</option>
+            <option value="EVAL">Evaluate</option>
+            <option value="VIEW">View</option>
+        </select>
+        <input type="text" id="varName" style="width: 40px" />
+        <input type="text" id="varExpr" style="width: 400px" />
         <input type="submit" value="Send" />
         <button id="btnClear">Clear</button>
     </form>
@@ -23,7 +31,21 @@
     <script type="text/javascript">
     $(function() {
         $('#cmdForm').bind('submit', function() {
-            sjxComet.request('save_cmd', [$('#cmd').attr('value'), $('#cmds').attr('data-exprs')]);
+            if( $('#cmd').attr('value') == 'LET' )
+            {
+            sjxComet.request('let_cmd', [ 
+                $('#varName').attr('value'), 
+                $('#varExpr').attr('value'),
+                $('#cmds').attr('data-exprs')]);
+            }
+            else
+            {
+            sjxComet.request('save_cmd', [
+                $('#cmd').attr('value'), 
+                $('#varName').attr('value'), 
+                $('#varExpr').attr('value'),
+                $('#cmds').attr('data-exprs')]);
+            }
             return false;
         });
         $('#cmd').focus();

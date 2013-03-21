@@ -31,7 +31,7 @@ class DFA:
                 return False
             Q = self.delta[Q][self.sigma.index(a)]
         return Q in self.F
-    
+
     def Alphabet(self):
         return self.sigma
 
@@ -106,7 +106,7 @@ class DFA:
             uu, vv = stack.pop()
             if self.bad(uu,vv):
                 print "Bad pair: (", uu, ",", vv, ")"
-                return (False, part)
+                return (False, part, (uu,vv))
             u = self.find( uu, part )
             v = self.find( vv, part )
             if u[1] != v[1]:
@@ -115,7 +115,7 @@ class DFA:
                     u1 = self.delta[uu][i]
                     v1 = self.delta[vv][i]
                     stack.append( (u1,v1) )
-        return (True, part)
+        return (True, part, None)
 
     def bad(self,p,q):
         if p in self.F and q not in self.F:
@@ -146,7 +146,7 @@ class DFA:
             part[s][0] = q[1]
         return q
 
-    def Reverse(self): 
+    def Reverse(self):
         Q = self.Q + 1
         S = self.F
         F = { self.s }
@@ -188,7 +188,7 @@ class NFA:
                 item.append( "*" )
             rep.append( " ".join( item ) )
         return "\n".join(rep)
-    
+
     def toSNFA(self):
         delta = self.delta
         Q = self.Q
